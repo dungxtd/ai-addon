@@ -14,9 +14,31 @@ export interface TestStep {
     steps: string[];
 }
 
+export interface AIConfig {
+    provider: string;
+    model: string;
+    promptTemplate: string;
+    apiKey?: string;
+    endpoint?: string;
+}
+
+export interface TestFormat {
+    gauge: string;
+    gherkin: string;
+}
+
 export interface TestScenario {
     title: string;
     steps: TestStep[];
+}
+
+export interface GeneratedTests {
+    gauge: TestStep[];
+    gherkin: TestStep[];
+}
+
+export interface AIProvider {
+    generateTestFormats(api: ApiInfo): Promise<TestFormat>;
 }
 
 export interface CollectionProcessor {

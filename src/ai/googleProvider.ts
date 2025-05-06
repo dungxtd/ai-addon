@@ -1,4 +1,4 @@
-import { AIProvider, AIConfig } from './types';
+import { AIProvider, AIConfig, ApiInfo, TestFormat } from '../types';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as dotenv from 'dotenv';
 
@@ -17,20 +17,23 @@ export class GoogleAIProvider implements AIProvider {
         this.config = config;
     }
 
-    async generateTestSteps(input: string): Promise<string> {
+    async generateTestFormats(api: ApiInfo): Promise<TestFormat> {
         try {
             const model = this.client.getGenerativeModel({ model: this.config.model });
-            const prompt = this.config.promptTemplate.replace('{{input}}', input);
+            const prompt = this.config.promptTemplate
+                .replace('{{name}}', api.name || 'Unnamed API')
+                .replace('{{method}}', api.method)
+                .replace('{{url}}', api.url)
+                .replace('{{headers}}', JSON.stringify(api.headers, null, 2))
+                .replace('{{body}}', api.body || '');
 
             const result = await model.generateContent(prompt);
-            const response = await result.response;
-            const content = response.text();
-
-            if (!content) {
-                throw new Error('No response from Google AI');
-            }
-
-            return content;
+            const content = result.response.text();
+            const [gauge, gherkin] = content.split('---GHERKIN---').map(part => part.trim());
+            return {
+                gauge: gauge || '',
+                gherkin: gherkin || ''
+            };
         } catch (error) {
             throw new Error(`Google AI API error: ${error.message}`);
         }

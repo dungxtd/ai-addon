@@ -1,7 +1,39 @@
 import { Collection, Request } from 'postman-collection';
-import { ApiInfo, TestScenario, CollectionProcessor } from './types';
+import { ApiInfo, TestScenario, CollectionProcessor, TestStep } from './types';
 import { readJsonFile, writeMarkdownFile, sanitizeFileName } from './utils';
 import { generateTestStepsFromAI } from './generator';
+
+function parseGaugeResponse(response: string): TestStep[] {
+    const content = response.replace('Gauge Format:', '').trim();
+    const scenarios = content.split(/\n(?=Scenario:)/);
+    return scenarios.map(scenario => {
+        const lines = scenario.split('\n').filter(line => line.trim());
+        const scenarioTitle = lines[0].replace(/^Scenario:\s*/, '').trim();
+        const steps = lines.slice(1)
+            .filter(line => line.startsWith('*'))
+            .map(line => line.replace(/^\*\s+/, '').trim());
+        return {
+            scenario: scenarioTitle,
+            steps
+        };
+    }).filter(step => step.scenario && step.steps.length > 0);
+}
+
+function parseGherkinResponse(response: string): TestStep[] {
+    const content = response.split('Feature:')[1]?.trim() || response;
+    const scenarios = content.split(/\n(?=\s*Scenario:)/);
+    return scenarios.map(scenario => {
+        const lines = scenario.split('\n').filter(line => line.trim());
+        const scenarioTitle = lines[0].replace(/^\s*Scenario:\s*/, '').trim();
+        const steps = lines.slice(1)
+            .filter(line => /^\s*(Given|When|Then|And)/.test(line))
+            .map(line => line.trim());
+        return {
+            scenario: scenarioTitle,
+            steps
+        };
+    }).filter(step => step.scenario && step.steps.length > 0);
+}
 import { FileScanner } from './fileScanner';
 import * as path from 'path';
 import * as fs from 'fs-extra';
@@ -65,31 +97,69 @@ async function processCollection(collectionPath: string): Promise<void> {
         });
 
         console.log(`Found ${apis.length} API endpoints\n\n[3/4] Generating test scenarios...`);
-        const scenarios: TestScenario[] = [];
-        for (const api of apis) {
-            console.log(`Generating tests for: ${api.name} (${api.method.toUpperCase()} ${api.url})`);
-            const testSteps = await generateTestStepsFromAI(api);
-            const title = api.path ? 
-                `${api.path.join(' > ')} > ${api.name}` :
-                api.name;
+        const gaugeScenarios: { title: string; steps: TestStep[] }[] = [];
+        const gherkinScenarios: { title: string; steps: TestStep[] }[] = [];
 
-            scenarios.push({
-                title,
-                steps: testSteps
-            });
+        for (const api of apis) {
+            const apiTitle = api.path ? `${api.path.join(' > ')} > ${api.name}` : api.name;
+            console.log(`Generating tests for: ${apiTitle} (${api.method.toUpperCase()} ${api.url})`);
+            let attempts = 0;
+            const maxAttempts = 3;
+            while (attempts < maxAttempts) {
+                try {
+                    const testFormats = await generateTestStepsFromAI(api);
+                    const title = api.path ? 
+                        `${api.path.join(' > ')} > ${api.name}` :
+                        api.name;
+
+                    const gaugeSteps = parseGaugeResponse(testFormats.gauge);
+                    const gherkinSteps = parseGherkinResponse(testFormats.gherkin);
+
+                    // Verify that we have valid steps
+                    if (gaugeSteps.length === 0 || gherkinSteps.length === 0 ||
+                        gaugeSteps.some(s => s.steps.length === 0) || 
+                        gherkinSteps.some(s => s.steps.length === 0)) {
+                        console.log(`Retrying test generation for ${apiTitle} (attempt ${attempts + 1}/${maxAttempts})`);
+                        attempts++;
+                        continue;
+                    }
+
+                    gaugeScenarios.push({
+                        title,
+                        steps: gaugeSteps
+                    });
+
+                    gherkinScenarios.push({
+                        title,
+                        steps: gherkinSteps
+                    });
+                    break;
+                } catch (error) {
+                    console.error(`Error generating tests for ${apiTitle}:`, error.message);
+                    attempts++;
+                    if (attempts === maxAttempts) {
+                        console.error(`Failed to generate tests for ${apiTitle} after ${maxAttempts} attempts`);
+                        break;
+                    }
+                    console.log(`Retrying test generation (attempt ${attempts + 1}/${maxAttempts})`);
+                }
+            }
         }
 
-        // Generate output filename
+        // Generate output filenames
         const outputDir = path.join(process.cwd(), 'output');
         await ensureOutputDirectory(outputDir);
         const baseName = path.basename(collectionPath, '.json');
-        const outputFile = path.join(outputDir, `${baseName}.md`);
+        const gaugeFile = path.join(outputDir, `${baseName}.md`);
+        const gherkinFile = path.join(outputDir, `${baseName}.feature`);
 
-        console.log('\n[4/4] Writing test scenarios to file...');
-        await writeMarkdownFile(outputFile, scenarios);
+        console.log('\n[4/4] Writing test scenarios to files...');
+        await writeMarkdownFile(gaugeFile, gaugeScenarios);
+        await writeMarkdownFile(gherkinFile, gherkinScenarios);
         console.log('\n=== Processing Complete ===');
-        console.log(`Generated ${scenarios.length} test scenarios`);
-        console.log(`Output file: ${outputFile}`);
+        console.log(`Generated ${gaugeScenarios.length} test scenarios in two formats:`);
+        console.log(`Gauge Spec: ${gaugeFile}`);
+        console.log(`Gherkin Feature: ${gherkinFile}`);
 
     } catch (error) {
         console.error('Error processing collection:', error);
@@ -128,12 +198,12 @@ async function main() {
         console.log('\n[2/2] Processing collections...');
         for (const file of files) {
             if (file.exists) {
-                console.log(`⏩ Skipped: ${path.basename(file.inputFile)} (already exists)`);
+                console.log(`⏩ Skipped: ${path.basename(file.inputFile)} (both formats exist)`);
                 continue;
             }
             
             await processCollection(file.inputFile);
-            console.log(`✅ Processed: ${path.basename(file.inputFile)} → ${path.basename(file.outputFile)}`);
+            console.log(`✅ Processed: ${path.basename(file.inputFile)} → ${path.basename(file.mdFile)} & ${path.basename(file.featureFile)}`);
         }
         
         console.log('\n=== Processing Complete ===');

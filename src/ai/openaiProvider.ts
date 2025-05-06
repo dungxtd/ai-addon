@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { AIProvider, AIConfig, AIResponse } from './types';
+import { AIProvider, AIConfig, ApiInfo, TestFormat } from '../types';
 import * as dotenv from 'dotenv';
 
 export class OpenAIProvider implements AIProvider {
@@ -17,9 +17,14 @@ export class OpenAIProvider implements AIProvider {
         this.config = config;
     }
 
-    async generateTestSteps(input: string): Promise<string> {
+    async generateTestFormats(api: ApiInfo): Promise<TestFormat> {
         try {
-            const prompt = this.config.promptTemplate.replace('{{input}}', input);
+            const prompt = this.config.promptTemplate
+                .replace('{{name}}', api.name || 'Unnamed API')
+                .replace('{{method}}', api.method)
+                .replace('{{url}}', api.url)
+                .replace('{{headers}}', JSON.stringify(api.headers, null, 2))
+                .replace('{{body}}', api.body || '');
 
             const response = await this.client.chat.completions.create({
                 model: this.config.model,
@@ -30,12 +35,12 @@ export class OpenAIProvider implements AIProvider {
                 temperature: 0.7,
             });
 
-            const content = response.choices[0]?.message?.content;
-            if (!content) {
-                throw new Error('No response from OpenAI');
-            }
-
-            return content;
+            const content = response.choices[0].message.content || '';
+            const [gauge, gherkin] = content.split('---GHERKIN---').map(part => part.trim());
+            return {
+                gauge: gauge || '',
+                gherkin: gherkin || ''
+            };
         } catch (error) {
             throw new Error(`OpenAI API error: ${error.message}`);
         }

@@ -1,4 +1,4 @@
-import { AIProvider } from './types';
+import { AIConfig, AIProvider } from '../types';
 import { OpenAIProvider } from './openaiProvider';
 import { GoogleAIProvider } from './googleProvider';
 import { OllamaProvider } from './ollamaProvider';

@@ -11,28 +11,35 @@ export async function readJsonFile(filePath: string): Promise<any> {
 }
 
 export async function writeMarkdownFile(filePath: string, scenarios: TestScenario[]): Promise<void> {
+    const isFeatureFile = filePath.endsWith('.feature');
     try {
-        const content = formatScenariosToMarkdown(scenarios);
+        const content = formatScenariosToMarkdown(scenarios, isFeatureFile);
         await fs.writeFile(filePath, content, 'utf8');
     } catch (error) {
         throw new Error(`Error writing markdown file: ${error.message}`);
     }
 }
 
-export function formatScenariosToMarkdown(scenarios: TestScenario[]): string {
-    return scenarios.map(scenario => {
-        const scenarioContent = [`# ${scenario.title}\n`];
-        
-        scenario.steps.forEach(step => {
-            scenarioContent.push(`## ${step.scenario}\n`);
-            step.steps.forEach(testStep => {
-                scenarioContent.push(`* ${testStep}\n`);
-            });
-            scenarioContent.push('\n');
-        });
-
-        return scenarioContent.join('');
-    }).join('\n---\n\n');
+function formatScenariosToMarkdown(scenarios: TestScenario[], isFeature: boolean = false): string {
+    return scenarios
+        .map(scenario => {
+            if (isFeature) {
+                const featureTitle = `Feature: ${scenario.title}`;
+                let content = '';
+                scenario.steps.forEach(step => {
+                    content += `\n\nScenario: ${step.scenario.replace('Gherkin format:', '').trim()}\n${step.steps.join('\n')}`;
+                });
+                return `${featureTitle}${content}\n---\n`;
+            } else {
+                const title = `# ${scenario.title}`;
+                let content = '';
+                scenario.steps.forEach(step => {
+                    content += `\n## ${step.scenario}\n${step.steps.map(s => `* ${s}`).join('\n')}\n`;
+                });
+                return `${title}${content}\n---\n`;
+            }
+        })
+        .join('\n');
 }
 
 export function sanitizeFileName(name: string): string {

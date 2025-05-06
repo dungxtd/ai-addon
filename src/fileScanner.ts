@@ -4,8 +4,14 @@ import * as dotenv from 'dotenv';
 
 export interface FileMapping {
     inputFile: string;
-    outputFile: string;
+    mdFile: string;
+    featureFile: string;
     exists: boolean;
+    outputFile?: string; // For backward compatibility
+}
+
+export function getOutputFile(mapping: FileMapping): string {
+    return mapping.mdFile; // Default to md file for compatibility
 }
 
 export class FileScanner {
@@ -28,7 +34,9 @@ export class FileScanner {
         return Promise.all(
             files.map(async (file) => {
                 const mapping = this.mapInputToOutput(file);
-                const exists = await fs.pathExists(mapping.outputFile);
+                const mdExists = await fs.pathExists(mapping.mdFile);
+                const featureExists = await fs.pathExists(mapping.featureFile);
+                const exists = mdExists && featureExists;
                 return { ...mapping, exists };
             })
         );
@@ -55,11 +63,13 @@ export class FileScanner {
     private mapInputToOutput(inputFilePath: string): Omit<FileMapping, 'exists'> {
         const relativePath = path.relative(this.inputFolder, inputFilePath);
         const baseName = path.basename(relativePath, path.extname(relativePath));
-        const outputFile = path.join(this.outputFolder, `${baseName}.md`);
+        const mdFile = path.join(this.outputFolder, `${baseName}.md`);
+        const featureFile = path.join(this.outputFolder, `${baseName}.feature`);
 
         return {
             inputFile: inputFilePath,
-            outputFile
+            mdFile,
+            featureFile
         };
     }
 

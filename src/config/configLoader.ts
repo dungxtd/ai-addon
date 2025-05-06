@@ -1,21 +1,32 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
-import { AIConfig } from '../ai/types';
+import { AIConfig } from '../types';
 
 const DEFAULT_CONFIG: AIConfig = {
     provider: 'openai',
     model: 'gpt-4',
-    promptTemplate: `Given the following API request details, generate test scenarios in Gauge format:
+    promptTemplate: `Given the following API request details, generate test scenarios in both Gauge and Gherkin formats.
 
-{{input}}
+API Details:
+Name: {{name}}
+Method: {{method}}
+URL: {{url}}
+Headers: {{headers}}
+Body: {{body}}
 
-Please provide test steps for:
+Generate test scenarios for:
 1. Successful request (status 200)
 2. Bad request (status 400)
 3. Unauthorized (status 401)
 4. Forbidden (status 403)
 
-Include response body validation where applicable.`
+First, provide the Gauge format scenarios with steps prefixed by '*'.
+
+Then add a line containing only '---GHERKIN---'
+
+Finally, provide the Gherkin format scenarios using 'Given/When/Then/And' steps.
+
+Include response body validation in both formats.`
 };
 
 export async function loadConfig(configPath?: string): Promise<AIConfig> {
