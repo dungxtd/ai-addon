@@ -1,0 +1,29 @@
+{
+  "name": "ai-addon",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "author": "",
+  "license": "ISC",
+  "description": "AI File Processor using multiple AI providers",
+  "scripts": {
+    "start": "npx ts-node src/index.ts",
+    "build": "npx ts-node src/index.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.12",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@types/fs-extra": "^11.0.4",
+    "@types/postman-collection": "^3.5.10",
+    "axios": "^1.9.0",
+    "dotenv": "^16.5.0",
+    "fs-extra": "^11.3.0",
+    "ollama": "^0.5.15",
+    "openai": "^4.97.0",
+    "postman-collection": "^5.0.2"
+  },
+  "keywords": []
+}

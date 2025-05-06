@@ -1,0 +1,6 @@
+{
+    "provider": "openai",
+    "model": "gpt-4",
+    "promptTemplate": "Given the following API request details, generate test scenarios in Gauge format:\n\n{{input}}\n\nPlease provide test steps for:\n1. Successful request (status 200)\n2. Bad request (status 400)\n3. Unauthorized (status 401)\n4. Forbidden (status 403)\n\nInclude response body validation where applicable.",
+    "endpoint": "https://api.openai.com/v1"
+}
