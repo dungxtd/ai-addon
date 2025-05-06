@@ -20,7 +20,6 @@ export class OpenAIProvider implements AIProvider {
     async generateTestFormats(api: ApiInfo): Promise<TestFormat> {
         try {
             const prompt = this.config.promptTemplate
-                .replace('{{name}}', api.name || 'Unnamed API')
                 .replace('{{method}}', api.method)
                 .replace('{{url}}', api.url)
                 .replace('{{headers}}', JSON.stringify(api.headers, null, 2))
