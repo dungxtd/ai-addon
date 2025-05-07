@@ -4,14 +4,14 @@ import { readJsonFile, writeMarkdownFile, sanitizeFileName } from './utils';
 import { generateTestStepsFromAI } from './generator';
 
 function parseGaugeResponse(response: string): TestStep[] {
-    const content = response.replace('Gauge Format:', '').trim();
-    const scenarios = content.split(/\n(?=Scenario:)/);
+    console.debug('Parsing Gauge response:', response);
+    const scenarios = response.split(/\n(?=\s*Scenario:)/);
     return scenarios.map(scenario => {
         const lines = scenario.split('\n').filter(line => line.trim());
-        const scenarioTitle = lines[0].replace(/^Scenario:\s*/, '').trim();
+        const scenarioTitle = lines[0].replace(/^\s*Scenario:\s*/, '').trim();
         const steps = lines.slice(1)
-            .filter(line => line.startsWith('*'))
-            .map(line => line.replace(/^\*\s+/, '').trim());
+            .filter(line => line.trim() && !line.toLowerCase().startsWith('scenario:'))
+            .map(line => line.replace(/^[*\s]+/, '').trim());
         return {
             scenario: scenarioTitle,
             steps
@@ -20,14 +20,14 @@ function parseGaugeResponse(response: string): TestStep[] {
 }
 
 function parseGherkinResponse(response: string): TestStep[] {
-    const content = response.split('Feature:')[1]?.trim() || response;
-    const scenarios = content.split(/\n(?=\s*Scenario:)/);
+    console.debug('Parsing Gherkin response:', response);
+    const scenarios = response.split(/\n(?=\s*Scenario:)/);
     return scenarios.map(scenario => {
         const lines = scenario.split('\n').filter(line => line.trim());
         const scenarioTitle = lines[0].replace(/^\s*Scenario:\s*/, '').trim();
         const steps = lines.slice(1)
-            .filter(line => /^\s*(Given|When|Then|And)/.test(line))
-            .map(line => line.trim());
+            .filter(line => line.trim() && !line.toLowerCase().startsWith('scenario:'))
+            .map(line => line.replace(/^\s*(Given|When|Then|And)\s+/, '').trim());
         return {
             scenario: scenarioTitle,
             steps
