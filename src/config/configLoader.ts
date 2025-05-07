@@ -3,8 +3,8 @@ import * as path from 'path';
 import { AIConfig } from '../types';
 
 const DEFAULT_CONFIG: AIConfig = {
-    provider: 'openai',
-    model: 'gpt-4',
+    provider: 'google',
+    model: 'gemini-2.0-flash',
     promptTemplate: `Given the following API request details, generate test scenarios in both Gauge and Gherkin formats.
 
 API Details:
@@ -26,7 +26,7 @@ Then add a line containing only '---GHERKIN---'
 
 Finally, provide the Gherkin format scenarios using 'Given/When/Then/And' steps.
 
-Include response body validation in both formats.`
+Include response body validation in both formats. No explanation needed.`
 };
 
 export async function loadConfig(configPath?: string): Promise<AIConfig> {

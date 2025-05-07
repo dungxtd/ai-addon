@@ -21,6 +21,7 @@ export class GoogleAIProvider implements AIProvider {
         try {
             const model = this.client.getGenerativeModel({ model: this.config.model });
             const prompt = this.config.promptTemplate
+                .replace('{{name}}', api.name || 'Unnamed API')
                 .replace('{{method}}', api.method)
                 .replace('{{url}}', api.url)
                 .replace('{{headers}}', JSON.stringify(api.headers, null, 2))

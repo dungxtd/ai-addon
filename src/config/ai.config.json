@@ -1,6 +1,6 @@
 {
-    "provider": "openai",
-    "model": "gpt-4",
-    "promptTemplate": "Given the following API request details, generate test scenarios in both Gauge and Gherkin formats.\n\nAPI Details:\nName: {{name}}\nMethod: {{method}}\nURL: {{url}}\nHeaders: {{headers}}\nBody: {{body}}\n\nGenerate test scenarios for:\n1. Successful request (status 200)\n2. Bad request (status 400)\n3. Unauthorized (status 401)\n4. Forbidden (status 403)\n\nFirst, provide the Gauge format scenarios with steps prefixed by '*'.\n\nThen add a line containing only '---GHERKIN---'\n\nFinally, provide the Gherkin format scenarios using 'Given/When/Then/And' steps.\n\nInclude response body validation in both formats.",
+    "provider": "google",
+    "model": "gemini-pro",
+    "promptTemplate": "Given the following API request details, generate test scenarios in both Gauge and Gherkin formats.\n\nAPI Details:\nName: {{name}}\nMethod: {{method}}\nURL: {{url}}\nHeaders: {{headers}}\nBody: {{body}}\n\nGenerate test scenarios for:\n1. Successful request (status 200)\n2. Bad request (status 400)\n3. Unauthorized (status 401)\n4. Forbidden (status 403)\n\nFirst, provide the Gauge format scenarios with steps prefixed by '*'.\n\nThen add a line containing only '---GHERKIN---'\n\nFinally, provide the Gherkin format scenarios using 'Given/When/Then/And' steps.\n\nInclude response body validation in both formats. No explanation needed.",
     "endpoint": "https://api.openai.com/v1"
 }

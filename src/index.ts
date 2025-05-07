@@ -5,106 +5,30 @@ import { generateTestStepsFromAI } from './generator';
 
 function parseGaugeResponse(response: string): TestStep[] {
     console.debug('Parsing Gauge response:', response);
-    const lines = response.split('\n');
-    const scenarios: TestStep[] = [];
-    let currentScenario = '';
-    let currentSteps: string[] = [];
-    let inCodeBlock = false;
-    let currentStep = '';
-
-    for (const line of lines) {
-        const trimmedLine = line.trim();
-        if (!trimmedLine) continue;
-
-        if (trimmedLine.startsWith('```')) {
-            inCodeBlock = !inCodeBlock;
-            if (!inCodeBlock && currentStep) {
-                currentSteps.push(currentStep);
-                currentStep = '';
-            }
-            continue;
-        }
-
-        if (trimmedLine.toLowerCase().includes('scenario:')) {
-            if (currentScenario && currentSteps.length > 0) {
-                scenarios.push({ scenario: currentScenario, steps: currentSteps });
-            }
-            currentScenario = trimmedLine.replace(/^.*scenario:\s*/i, '').trim();
-            currentSteps = [];
-            currentStep = '';
-        } else if (inCodeBlock) {
-            currentStep += trimmedLine + '\n';
-        } else if (trimmedLine.startsWith('*')) {
-            if (currentStep) {
-                currentSteps.push(currentStep.trim());
-            }
-            currentStep = trimmedLine.replace(/^\*\s+/, '');
-        } else if (currentStep) {
-            currentStep += ' ' + trimmedLine;
-        } else {
-            currentStep = trimmedLine;
-        }
-    }
-
-    if (currentStep) {
-        currentSteps.push(currentStep.trim());
-    }
-
-    if (currentScenario && currentSteps.length > 0) {
-        scenarios.push({ scenario: currentScenario, steps: currentSteps });
-    }
-
-    return scenarios;
+    const sections = response.split(/\n(?=##?\s+Scenario:|#\s+Scenario:)/).filter(Boolean);
+    return sections.map(section => {
+        const lines = section.split('\n');
+        const scenarioLine = lines[0];
+        const scenario = scenarioLine.replace(/^##?\s+Scenario:\s*/, '').trim();
+        const steps = lines.slice(1)
+            .filter(line => line.trim())
+            .map(line => line.trim());
+        return { scenario, steps };
+    });
 }
 
 function parseGherkinResponse(response: string): TestStep[] {
     console.debug('Parsing Gherkin response:', response);
-    const lines = response.split('\n');
-    const scenarios: TestStep[] = [];
-    let currentScenario = '';
-    let currentSteps: string[] = [];
-    let inCodeBlock = false;
-    let currentStep = '';
-
-    for (const line of lines) {
-        const trimmedLine = line.trim();
-        if (!trimmedLine) continue;
-
-        if (trimmedLine.startsWith('```')) {
-            inCodeBlock = !inCodeBlock;
-            if (!inCodeBlock && currentStep) {
-                currentSteps.push(currentStep);
-                currentStep = '';
-            }
-            continue;
-        }
-
-        if (trimmedLine.toLowerCase().includes('scenario:')) {
-            if (currentScenario && currentSteps.length > 0) {
-                scenarios.push({ scenario: currentScenario, steps: currentSteps });
-            }
-            currentScenario = trimmedLine.replace(/^.*scenario:\s*/i, '').trim();
-            currentSteps = [];
-            currentStep = '';
-        } else if (inCodeBlock) {
-            currentStep += trimmedLine + '\n';
-        } else if (!trimmedLine.toLowerCase().startsWith('feature:')) {
-            if (currentStep) {
-                currentSteps.push(currentStep.trim());
-            }
-            currentStep = trimmedLine;
-        }
-    }
-
-    if (currentStep) {
-        currentSteps.push(currentStep.trim());
-    }
-
-    if (currentScenario && currentSteps.length > 0) {
-        scenarios.push({ scenario: currentScenario, steps: currentSteps });
-    }
-
-    return scenarios;
+    const sections = response.split(/\n(?=Scenario:)/).filter(Boolean);
+    return sections.map(section => {
+        const lines = section.split('\n');
+        const scenarioLine = lines[0];
+        const scenario = scenarioLine.replace(/^Scenario:\s*/, '').trim();
+        const steps = lines.slice(1)
+            .filter(line => line.trim() && !line.toLowerCase().startsWith('feature:'))
+            .map(line => line.trim());
+        return { scenario, steps };
+    });
 }
 import { FileScanner } from './fileScanner';
 import * as path from 'path';

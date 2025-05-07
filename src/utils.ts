@@ -23,21 +23,9 @@ export async function writeMarkdownFile(filePath: string, scenarios: TestScenari
 function formatScenariosToMarkdown(scenarios: TestScenario[], isFeature: boolean = false): string {
     return scenarios
         .map(scenario => {
-            if (isFeature) {
-                const featureTitle = `Feature: ${scenario.title}`;
-                let content = '';
-                scenario.steps.forEach(step => {
-                    content += `\n\nScenario: ${step.scenario.replace('Gherkin format:', '').trim()}\n${step.steps.join('\n')}`;
-                });
-                return `${featureTitle}${content}\n---\n`;
-            } else {
-                const title = `# ${scenario.title}`;
-                let content = '';
-                scenario.steps.forEach(step => {
-                    content += `\n## ${step.scenario}\n${step.steps.map(s => `* ${s}`).join('\n')}\n`;
-                });
-                return `${title}${content}\n---\n`;
-            }
+            const title = isFeature ? `Feature: ${scenario.title}` : `# ${scenario.title}`;
+            const content = scenario.steps[0].steps.join('\n\n');
+            return `${title}\n\n${content}\n---\n`;
         })
         .join('\n');
 }
