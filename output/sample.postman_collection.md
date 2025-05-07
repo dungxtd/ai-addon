@@ -1,90 +1,80 @@
 # Get User > 
-## Gauge Format:
-* 1. Successful request (status 200)
-* Set user id for the API at https://api.example.com/users/:id
-* Set the Authorization header with Bearer token
-* Send a GET request to the API
-* Verify the response status is 200
-* Verify the response body contains user details
-* 2. Bad request (status 400)
-* Set an invalid user id for the API at https://api.example.com/users/:id
-* Set the Authorization header with Bearer token
-* Send a GET request to the API
-* Verify the response status is 400
-* Verify the response body contains an error message
-* 3. Unauthorized (status 401)
-* Set user id for the API at https://api.example.com/users/:id
-* Set the Authorization header with an invalid Bearer token
-* Send a GET request to the API
-* Verify the response status is 401
-* Verify the response body contains an unauthorized error message
-* 4. Forbidden (status 403)
-* Set user id for the API at https://api.example.com/users/:id for a user you don't have access to
-* Set the Authorization header with Bearer token
-* Send a GET request to the API
-* Verify the response status is 403
-* Verify the response body contains a forbidden error message
+## Successful request
+* * Set headers "Authorization" with value "Bearer {{token}}"
+* * Send get request to "https://api.example.com/users/:id"
+* * Ensure status code is "200"
+* * Verify response body contains "id"
+
+## Bad request
+* * Set headers "Authorization" with value "Bearer {{token}}"
+* * Send get request to "https://api.example.com/users/"
+* * Ensure status code is "400"
+
+## Unauthorized
+* * Set headers "Authorization" with value "Bearer wrongToken"
+* * Send get request to "https://api.example.com/users/:id"
+* * Ensure status code is "401"
+
+## Forbidden
+* * Set headers "Authorization" with value "Bearer {{token}}"
+* * Send get request to "https://api.example.com/users/differentId"
+* * Ensure status code is "403"
 
 ---
 
 # Create User > 
-## Gauge Format:
-* 1. Successful request (status 200)
-* Set the request name to {{name}}
-* Set the request method to post
-* Set the request URL to https://api.example.com/users
-* Set the request headers
-* Set the request body
-* Send the request
-* Verify the status code is 200
-* Verify the response body is as expected
-* 2. Bad request (status 400)
-* Set the request name to {{name}}
-* Set the request method to post
-* Set the request URL to https://api.example.com/users
-* Set the request headers
-* Set the incorrect request body
-* Send the request
-* Verify the status code is 400
-* Verify the response body is as expected
-* 3. Unauthorized (status 401)
-* Set the request name to {{name}}
-* Set the request method to post
-* Set the request URL to https://api.example.com/users
-* Set the request headers without authorization
-* Set the request body
-* Send the request
-* Verify the status code is 401
-* Verify the response body is as expected
-* 4. Forbidden (status 403)
-* Set the request name to {{name}}
-* Set the request method to post
-* Set the request URL to https://api.example.com/users
-* Set the request headers with incorrect authorization
-* Set the request body
-* Send the request
-* Verify the status code is 403
-* Verify the response body is as expected
+## Successful request
+* * Send a POST request to "https://api.example.com/users" with the body
+* ```
+* {
+* "name": "John Doe",
+* "email": "john@example.com",
+* "role": "user"
+* }
+* ```
+* and headers
+* ```
+* {
+* "Content-Type": "application/json",
+* "Authorization": "Bearer {{token}}"
+* }
+* ```
+* * Ensure the response status is 200
+* * Validate the response body contains the name "John Doe", email "john@example.com" and role "user"
+
+## Bad request
+* * Send a POST request to "https://api.example.com/users" with an invalid body
+* * Ensure the response status is 400
+
+## Unauthorized
+* * Send a POST request to "https://api.example.com/users" without the Authorization header
+* * Ensure the response status is 401
+
+## Forbidden
+* * Send a POST request to "https://api.example.com/users" with a valid body but with an invalid or expired token in the Authorization header
+* * Ensure the response status is 403
 
 ---
 
 # List Products > 
-## Gauge Scenarios:
-* 1. Scenario: Successful request (status 200)
-* Send a GET request to "https://api.example.com/products"
-* Ensure that the response status is 200
-* Validate that the response body contains "products" data
-* 2. Scenario: Bad request (status 400)
-* Send a GET request to "https://api.example.com/products" with invalid parameters
-* Ensure that the response status is 400
-* Validate that the response body contains "error" message
-* 3. Scenario: Unauthorized (status 401)
-* Send a GET request to "https://api.example.com/products" without authorization
-* Ensure that the response status is 401
-* Validate that the response body contains "Unauthorized" message
-* 4. Scenario: Forbidden (status 403)
-* Send a GET request to "https://api.example.com/products" with a forbidden user
-* Ensure that the response status is 403
-* Validate that the response body contains "Forbidden" message
+## Successful request
+* * Send a GET request to https://api.example.com/products
+* * Verify that the response status is 200
+* * Verify that the response body contains product data
+
+## Bad request
+* * Send a GET request to https://api.example.com/products with an invalid parameter
+* * Verify that the response status is 400
+* * Verify that the response body contains error message related to bad request
+
+## Unauthorized request
+* * Send a GET request to https://api.example.com/products without authentication
+* * Verify that the response status is 401
+* * Verify that the response body contains error message related to unauthorized access
+
+## Forbidden request
+* * Send a GET request to https://api.example.com/products with a user who does not have access
+* * Verify that the response status is 403
+* * Verify that the response body contains error message related to forbidden access
 
 ---

@@ -5,34 +5,60 @@ import { generateTestStepsFromAI } from './generator';
 
 function parseGaugeResponse(response: string): TestStep[] {
     console.debug('Parsing Gauge response:', response);
-    const scenarios = response.split(/\n(?=\s*Scenario:)/);
-    return scenarios.map(scenario => {
-        const lines = scenario.split('\n').filter(line => line.trim());
-        const scenarioTitle = lines[0].replace(/^\s*Scenario:\s*/, '').trim();
-        const steps = lines.slice(1)
-            .filter(line => line.trim() && !line.toLowerCase().startsWith('scenario:'))
-            .map(line => line.replace(/^[*\s]+/, '').trim());
-        return {
-            scenario: scenarioTitle,
-            steps
-        };
-    }).filter(step => step.scenario && step.steps.length > 0);
+    const lines = response.split('\n');
+    const scenarios: TestStep[] = [];
+    let currentScenario = '';
+    let currentSteps: string[] = [];
+
+    for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (!trimmedLine) continue;
+
+        if (trimmedLine.toLowerCase().includes('scenario:')) {
+            if (currentScenario && currentSteps.length > 0) {
+                scenarios.push({ scenario: currentScenario, steps: currentSteps });
+            }
+            currentScenario = trimmedLine.replace(/^.*scenario:\s*/i, '').trim();
+            currentSteps = [];
+        } else {
+            currentSteps.push(trimmedLine);
+        }
+    }
+
+    if (currentScenario && currentSteps.length > 0) {
+        scenarios.push({ scenario: currentScenario, steps: currentSteps });
+    }
+
+    return scenarios;
 }
 
 function parseGherkinResponse(response: string): TestStep[] {
     console.debug('Parsing Gherkin response:', response);
-    const scenarios = response.split(/\n(?=\s*Scenario:)/);
-    return scenarios.map(scenario => {
-        const lines = scenario.split('\n').filter(line => line.trim());
-        const scenarioTitle = lines[0].replace(/^\s*Scenario:\s*/, '').trim();
-        const steps = lines.slice(1)
-            .filter(line => line.trim() && !line.toLowerCase().startsWith('scenario:'))
-            .map(line => line.replace(/^\s*(Given|When|Then|And)\s+/, '').trim());
-        return {
-            scenario: scenarioTitle,
-            steps
-        };
-    }).filter(step => step.scenario && step.steps.length > 0);
+    const lines = response.split('\n');
+    const scenarios: TestStep[] = [];
+    let currentScenario = '';
+    let currentSteps: string[] = [];
+
+    for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (!trimmedLine) continue;
+
+        if (trimmedLine.toLowerCase().includes('scenario:')) {
+            if (currentScenario && currentSteps.length > 0) {
+                scenarios.push({ scenario: currentScenario, steps: currentSteps });
+            }
+            currentScenario = trimmedLine.replace(/^.*scenario:\s*/i, '').trim();
+            currentSteps = [];
+        } else if (!trimmedLine.toLowerCase().startsWith('feature:')) {
+            currentSteps.push(trimmedLine);
+        }
+    }
+
+    if (currentScenario && currentSteps.length > 0) {
+        scenarios.push({ scenario: currentScenario, steps: currentSteps });
+    }
+
+    return scenarios;
 }
 import { FileScanner } from './fileScanner';
 import * as path from 'path';
