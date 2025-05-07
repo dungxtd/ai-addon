@@ -9,10 +9,21 @@ function parseGaugeResponse(response: string): TestStep[] {
     const scenarios: TestStep[] = [];
     let currentScenario = '';
     let currentSteps: string[] = [];
+    let inCodeBlock = false;
+    let currentStep = '';
 
     for (const line of lines) {
         const trimmedLine = line.trim();
         if (!trimmedLine) continue;
+
+        if (trimmedLine.startsWith('```')) {
+            inCodeBlock = !inCodeBlock;
+            if (!inCodeBlock && currentStep) {
+                currentSteps.push(currentStep);
+                currentStep = '';
+            }
+            continue;
+        }
 
         if (trimmedLine.toLowerCase().includes('scenario:')) {
             if (currentScenario && currentSteps.length > 0) {
@@ -20,9 +31,23 @@ function parseGaugeResponse(response: string): TestStep[] {
             }
             currentScenario = trimmedLine.replace(/^.*scenario:\s*/i, '').trim();
             currentSteps = [];
+            currentStep = '';
+        } else if (inCodeBlock) {
+            currentStep += trimmedLine + '\n';
+        } else if (trimmedLine.startsWith('*')) {
+            if (currentStep) {
+                currentSteps.push(currentStep.trim());
+            }
+            currentStep = trimmedLine.replace(/^\*\s+/, '');
+        } else if (currentStep) {
+            currentStep += ' ' + trimmedLine;
         } else {
-            currentSteps.push(trimmedLine);
+            currentStep = trimmedLine;
         }
+    }
+
+    if (currentStep) {
+        currentSteps.push(currentStep.trim());
     }
 
     if (currentScenario && currentSteps.length > 0) {
@@ -38,10 +63,21 @@ function parseGherkinResponse(response: string): TestStep[] {
     const scenarios: TestStep[] = [];
     let currentScenario = '';
     let currentSteps: string[] = [];
+    let inCodeBlock = false;
+    let currentStep = '';
 
     for (const line of lines) {
         const trimmedLine = line.trim();
         if (!trimmedLine) continue;
+
+        if (trimmedLine.startsWith('```')) {
+            inCodeBlock = !inCodeBlock;
+            if (!inCodeBlock && currentStep) {
+                currentSteps.push(currentStep);
+                currentStep = '';
+            }
+            continue;
+        }
 
         if (trimmedLine.toLowerCase().includes('scenario:')) {
             if (currentScenario && currentSteps.length > 0) {
@@ -49,9 +85,19 @@ function parseGherkinResponse(response: string): TestStep[] {
             }
             currentScenario = trimmedLine.replace(/^.*scenario:\s*/i, '').trim();
             currentSteps = [];
+            currentStep = '';
+        } else if (inCodeBlock) {
+            currentStep += trimmedLine + '\n';
         } else if (!trimmedLine.toLowerCase().startsWith('feature:')) {
-            currentSteps.push(trimmedLine);
+            if (currentStep) {
+                currentSteps.push(currentStep.trim());
+            }
+            currentStep = trimmedLine;
         }
+    }
+
+    if (currentStep) {
+        currentSteps.push(currentStep.trim());
     }
 
     if (currentScenario && currentSteps.length > 0) {
