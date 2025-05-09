@@ -4,7 +4,7 @@ import { Config } from '../config/config';
 
 export class GoogleAIProvider implements AIProvider {
   private client: GoogleGenerativeAI;
-  private model: string = 'gemini-pro';
+  private model: string = 'gemini-2.0-flash';
 
   constructor(config: Config) {
     if (!config.googleAiApiKey) {

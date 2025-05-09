@@ -1,104 +1,230 @@
-Feature: Get All Users API
+Feature: User API
 
-  Scenario: Get All Users - Success
+  Scenario: Get all users - Success
     Given I send a GET request to "/users"
     Then the response status should be 200
     And the response body should be an array
-    And the response body should contain user details like "id", "name", "email", "role"
+    And the response body should contain at least 1 element
+    And each element in the response body should contain "id"
+    And each element in the response body should contain "name"
+    And each element in the response body should contain "email"
+    And each element in the response body should contain "role"
 
-  Scenario: Get All Users - Unauthorized (401)
-    Given I send a GET request to "/users" with authorization "Bearer invalid_token"
+  Scenario: Get all users with limit - Success
+    Given I send a GET request to "/users?limit=5"
+    Then the response status should be 200
+    And the response body should be an array
+    And the response body should have at most 5 elements
+
+  Scenario: Get all users with offset - Success
+    Given I send a GET request to "/users?offset=2"
+    Then the response status should be 200
+    And the response body should be an array
+
+  Scenario: Get all users with limit and offset - Success
+    Given I send a GET request to "/users?limit=3&offset=1"
+    Then the response status should be 200
+    And the response body should be an array
+    And the response body should have at most 3 elements
+
+  Scenario: Get all users - Unauthorized (401)
+    Given I set the Authorization header to "Bearer invalid_token"
+    And I send a GET request to "/users"
     Then the response status should be 401
-    And the response body should contain "message": "Unauthorized"
+    And the response body should contain "Unauthorized"
 
-  Scenario: Get All Users - Forbidden (403)
-    Given I send a GET request to "/users" with authorization "Bearer forbidden_token"
+  Scenario: Get all users - Forbidden (403)
+    Given I set the Authorization header to "Bearer forbidden_token"
+    And I send a GET request to "/users"
     Then the response status should be 403
-    And the response body should contain "message": "Forbidden"
+    And the response body should contain "Forbidden"
 
-Feature: Create a New User API
-
-  Scenario: Create New User - Success
-    Given I send a POST request to "/users" with body {"name": "John Doe", "email": "john@example.com", "password": "password123", "role": "user"}
+  Scenario: Create a new user - Success
+    Given I set the request body to:
+      """
+      {
+        "name": "New User",
+        "email": "new@example.com",
+        "password": "password",
+        "role": "user"
+      }
+      """
+    When I send a POST request to "/users"
     Then the response status should be 201
-    And the response body should contain "id", "name", "email", "role"
+    And the response body should contain "id"
+    And the response body should contain "name": "New User"
+    And the response body should contain "email": "new@example.com"
+    And the response body should contain "role": "user"
 
-  Scenario: Create New User - Bad Request (400)
-    Given I send a POST request to "/users" with body {"email": "john@example.com"}
+  Scenario: Create a new user - Bad Request (400) - Missing name
+    Given I set the request body to:
+      """
+      {
+        "email": "new@example.com",
+        "password": "password",
+        "role": "user"
+      }
+      """
+    When I send a POST request to "/users"
     Then the response status should be 400
-    And the response body should contain "message": "Invalid input"
+    And the response body should contain "Invalid input"
 
-  Scenario: Create New User - Unauthorized (401)
-    Given I send a POST request to "/users" with body {"name": "John Doe", "email": "john@example.com", "password": "password123", "role": "user"} and authorization "Bearer invalid_token"
+  Scenario: Create a new user - Unauthorized (401)
+    Given I set the Authorization header to "Bearer invalid_token"
+    And I set the request body to:
+      """
+      {
+        "name": "New User",
+        "email": "new@example.com",
+        "password": "password",
+        "role": "user"
+      }
+      """
+    When I send a POST request to "/users"
     Then the response status should be 401
-    And the response body should contain "message": "Unauthorized"
+    And the response body should contain "Unauthorized"
 
-  Scenario: Create New User - Forbidden (403)
-    Given I send a POST request to "/users" with body {"name": "John Doe", "email": "john@example.com", "password": "password123", "role": "user"} and authorization "Bearer forbidden_token"
+  Scenario: Create a new user - Forbidden (403)
+    Given I set the Authorization header to "Bearer forbidden_token"
+    And I set the request body to:
+      """
+      {
+        "name": "New User",
+        "email": "new@example.com",
+        "password": "password",
+        "role": "user"
+      }
+      """
+    When I send a POST request to "/users"
     Then the response status should be 403
-    And the response body should contain "message": "Forbidden"
+    And the response body should contain "Forbidden"
 
-Feature: Get User by ID API
-
-  Scenario: Get User by ID - Success
+  Scenario: Get user by ID - Success
     Given I send a GET request to "/users/1"
     Then the response status should be 200
-    And the response body should contain "id", "name", "email", "role"
+    And the response body should contain "id": 1
+    And the response body should contain "name"
+    And the response body should contain "email"
+    And the response body should contain "role"
 
-  Scenario: Get User by ID - Bad Request (400)
+  Scenario: Get user by ID - Bad Request (400) - Invalid ID
     Given I send a GET request to "/users/invalid_id"
     Then the response status should be 400
-    And the response body should contain "message": "Invalid ID supplied"
+    And the response body should contain "Invalid ID supplied"
 
-  Scenario: Get User by ID - Unauthorized (401)
-    Given I send a GET request to "/users/1" with authorization "Bearer invalid_token"
+  Scenario: Get user by ID - Not Found (404)
+    Given I send a GET request to "/users/999"
+    Then the response status should be 404
+    And the response body should contain "User not found"
+
+  Scenario: Get user by ID - Unauthorized (401)
+    Given I set the Authorization header to "Bearer invalid_token"
+    And I send a GET request to "/users/1"
     Then the response status should be 401
-    And the response body should contain "message": "Unauthorized"
+    And the response body should contain "Unauthorized"
 
-  Scenario: Get User by ID - Forbidden (403)
-    Given I send a GET request to "/users/1" with authorization "Bearer forbidden_token"
+  Scenario: Get user by ID - Forbidden (403)
+    Given I set the Authorization header to "Bearer forbidden_token"
+    And I send a GET request to "/users/1"
     Then the response status should be 403
-    And the response body should contain "message": "Forbidden"
+    And the response body should contain "Forbidden"
 
-Feature: Update User API
-
-  Scenario: Update User - Success
-    Given I send a PUT request to "/users/1" with body {"name": "John Doe Updated", "email": "john.updated@example.com", "password": "newpassword123", "role": "admin"}
+  Scenario: Update user - Success
+    Given I set the request body to:
+      """
+      {
+        "name": "Updated User",
+        "email": "updated@example.com",
+        "password": "newpassword",
+        "role": "admin"
+      }
+      """
+    When I send a PUT request to "/users/1"
     Then the response status should be 200
-    And the response body should contain "id", "name", "email", "role"
+    And the response body should contain "id": 1
+    And the response body should contain "name": "Updated User"
+    And the response body should contain "email": "updated@example.com"
+    And the response body should contain "role": "admin"
 
-  Scenario: Update User - Bad Request (400)
-    Given I send a PUT request to "/users/1" with body {"email": "john.updated@example.com"}
+  Scenario: Update user - Bad Request (400) - Invalid input
+    Given I set the request body to:
+      """
+      {
+        "email": "updated@example.com",
+        "password": "newpassword",
+        "role": "admin"
+      }
+      """
+    When I send a PUT request to "/users/1"
     Then the response status should be 400
-    And the response body should contain "message": "Invalid input"
+    And the response body should contain "Invalid input"
 
-  Scenario: Update User - Unauthorized (401)
-    Given I send a PUT request to "/users/1" with body {"name": "John Doe Updated", "email": "john.updated@example.com", "password": "newpassword123", "role": "admin"} and authorization "Bearer invalid_token"
+  Scenario: Update user - Not Found (404)
+    Given I set the request body to:
+      """
+      {
+        "name": "Updated User",
+        "email": "updated@example.com",
+        "password": "newpassword",
+        "role": "admin"
+      }
+      """
+    When I send a PUT request to "/users/999"
+    Then the response status should be 404
+    And the response body should contain "User not found"
+
+  Scenario: Update user - Unauthorized (401)
+    Given I set the Authorization header to "Bearer invalid_token"
+    And I set the request body to:
+      """
+      {
+        "name": "Updated User",
+        "email": "updated@example.com",
+        "password": "newpassword",
+        "role": "admin"
+      }
+      """
+    When I send a PUT request to "/users/1"
     Then the response status should be 401
-    And the response body should contain "message": "Unauthorized"
+    And the response body should contain "Unauthorized"
 
-  Scenario: Update User - Forbidden (403)
-    Given I send a PUT request to "/users/1" with body {"name": "John Doe Updated", "email": "john.updated@example.com", "password": "newpassword123", "role": "admin"} and authorization "Bearer forbidden_token"
+  Scenario: Update user - Forbidden (403)
+    Given I set the Authorization header to "Bearer forbidden_token"
+    And I set the request body to:
+      """
+      {
+        "name": "Updated User",
+        "email": "updated@example.com",
+        "password": "newpassword",
+        "role": "admin"
+      }
+      """
+    When I send a PUT request to "/users/1"
     Then the response status should be 403
-    And the response body should contain "message": "Forbidden"
+    And the response body should contain "Forbidden"
 
-Feature: Delete User API
-
-  Scenario: Delete User - Success
+  Scenario: Delete user - Success
     Given I send a DELETE request to "/users/1"
     Then the response status should be 204
 
-  Scenario: Delete User - Bad Request (400)
+  Scenario: Delete user - Bad Request (400) - Invalid ID
     Given I send a DELETE request to "/users/invalid_id"
     Then the response status should be 400
-    And the response body should contain "message": "Invalid ID supplied"
+    And the response body should contain "Invalid ID supplied"
 
-  Scenario: Delete User - Unauthorized (401)
-    Given I send a DELETE request to "/users/1" with authorization "Bearer invalid_token"
+  Scenario: Delete user - Not Found (404)
+    Given I send a DELETE request to "/users/999"
+    Then the response status should be 404
+    And the response body should contain "User not found"
+
+  Scenario: Delete user - Unauthorized (401)
+    Given I set the Authorization header to "Bearer invalid_token"
+    And I send a DELETE request to "/users/1"
     Then the response status should be 401
-    And the response body should contain "message": "Unauthorized"
+    And the response body should contain "Unauthorized"
 
-  Scenario: Delete User - Forbidden (403)
-    Given I send a DELETE request to "/users/1" with authorization "Bearer forbidden_token"
+  Scenario: Delete user - Forbidden (403)
+    Given I set the Authorization header to "Bearer forbidden_token"
+    And I send a DELETE request to "/users/1"
     Then the response status should be 403
-    And the response body should contain "message": "Forbidden"
+    And the response body should contain "Forbidden"

@@ -1,114 +1,238 @@
-# API Test - Get All Users
+# API Test - Get all users
 
-## Scenario: Get All Users - Success
+## Scenario: Get all users - Success
 * Call GET "/users"
 * Verify response status is 200
 * Verify response body is an array
-* Verify response body contains user details like "id", "name", "email", "role"
+* Verify response body contains at least 1 element
+* Verify each element in response body contains "id"
+* Verify each element in response body contains "name"
+* Verify each element in response body contains "email"
+* Verify each element in response body contains "role"
 
-## Scenario: Get All Users - Unauthorized (401)
-* Call GET "/users"
+## Scenario: Get all users with limit - Success
+* Call GET "/users?limit=5"
+* Verify response status is 200
+* Verify response body is an array
+* Verify response body has at most 5 elements
+
+## Scenario: Get all users with offset - Success
+* Call GET "/users?offset=2"
+* Verify response status is 200
+* Verify response body is an array
+
+## Scenario: Get all users with limit and offset - Success
+* Call GET "/users?limit=3&offset=1"
+* Verify response status is 200
+* Verify response body is an array
+* Verify response body has at most 3 elements
+
+## Scenario: Get all users - Unauthorized (401)
 * Set Authorization header "Bearer invalid_token"
-* Verify response status is 401
-* Verify response body contains "message": "Unauthorized"
-
-## Scenario: Get All Users - Forbidden (403)
 * Call GET "/users"
+* Verify response status is 401
+* Verify response body contains "Unauthorized"
+
+## Scenario: Get all users - Forbidden (403)
 * Set Authorization header "Bearer forbidden_token"
+* Call GET "/users"
 * Verify response status is 403
-* Verify response body contains "message": "Forbidden"
+* Verify response body contains "Forbidden"
 
-# API Test - Create a New User
+# API Test - Create a new user
 
-## Scenario: Create New User - Success
-* Call POST "/users" with body {"name": "John Doe", "email": "john@example.com", "password": "password123", "role": "user"}
+## Scenario: Create a new user - Success
+* Set request body to:
+  """
+  {
+    "name": "New User",
+    "email": "new@example.com",
+    "password": "password",
+    "role": "user"
+  }
+  """
+* Call POST "/users"
 * Verify response status is 201
-* Verify response body contains "id", "name", "email", "role"
+* Verify response body contains "id"
+* Verify response body contains "name": "New User"
+* Verify response body contains "email": "new@example.com"
+* Verify response body contains "role": "user"
 
-## Scenario: Create New User - Bad Request (400)
-* Call POST "/users" with body {"email": "john@example.com"}
+## Scenario: Create a new user - Bad Request (400) - Missing name
+* Set request body to:
+  """
+  {
+    "email": "new@example.com",
+    "password": "password",
+    "role": "user"
+  }
+  """
+* Call POST "/users"
 * Verify response status is 400
-* Verify response body contains "message": "Invalid input"
+* Verify response body contains "Invalid input"
 
-## Scenario: Create New User - Unauthorized (401)
-* Call POST "/users" with body {"name": "John Doe", "email": "john@example.com", "password": "password123", "role": "user"}
+## Scenario: Create a new user - Unauthorized (401)
 * Set Authorization header "Bearer invalid_token"
+* Set request body to:
+  """
+  {
+    "name": "New User",
+    "email": "new@example.com",
+    "password": "password",
+    "role": "user"
+  }
+  """
+* Call POST "/users"
 * Verify response status is 401
-* Verify response body contains "message": "Unauthorized"
+* Verify response body contains "Unauthorized"
 
-## Scenario: Create New User - Forbidden (403)
-* Call POST "/users" with body {"name": "John Doe", "email": "john@example.com", "password": "password123", "role": "user"}
+## Scenario: Create a new user - Forbidden (403)
 * Set Authorization header "Bearer forbidden_token"
+* Set request body to:
+  """
+  {
+    "name": "New User",
+    "email": "new@example.com",
+    "password": "password",
+    "role": "user"
+  }
+  """
+* Call POST "/users"
 * Verify response status is 403
-* Verify response body contains "message": "Forbidden"
+* Verify response body contains "Forbidden"
 
-# API Test - Get User by ID
+# API Test - Get user by ID
 
-## Scenario: Get User by ID - Success
+## Scenario: Get user by ID - Success
 * Call GET "/users/1"
 * Verify response status is 200
-* Verify response body contains "id", "name", "email", "role"
+* Verify response body contains "id": 1
+* Verify response body contains "name"
+* Verify response body contains "email"
+* Verify response body contains "role"
 
-## Scenario: Get User by ID - Bad Request (400)
+## Scenario: Get user by ID - Bad Request (400) - Invalid ID
 * Call GET "/users/invalid_id"
 * Verify response status is 400
-* Verify response body contains "message": "Invalid ID supplied"
+* Verify response body contains "Invalid ID supplied"
 
-## Scenario: Get User by ID - Unauthorized (401)
-* Call GET "/users/1"
+## Scenario: Get user by ID - Not Found (404)
+* Call GET "/users/999"
+* Verify response status is 404
+* Verify response body contains "User not found"
+
+## Scenario: Get user by ID - Unauthorized (401)
 * Set Authorization header "Bearer invalid_token"
-* Verify response status is 401
-* Verify response body contains "message": "Unauthorized"
-
-## Scenario: Get User by ID - Forbidden (403)
 * Call GET "/users/1"
+* Verify response status is 401
+* Verify response body contains "Unauthorized"
+
+## Scenario: Get user by ID - Forbidden (403)
 * Set Authorization header "Bearer forbidden_token"
+* Call GET "/users/1"
 * Verify response status is 403
-* Verify response body contains "message": "Forbidden"
+* Verify response body contains "Forbidden"
 
-# API Test - Update User
+# API Test - Update user
 
-## Scenario: Update User - Success
-* Call PUT "/users/1" with body {"name": "John Doe Updated", "email": "john.updated@example.com", "password": "newpassword123", "role": "admin"}
+## Scenario: Update user - Success
+* Set request body to:
+  """
+  {
+    "name": "Updated User",
+    "email": "updated@example.com",
+    "password": "newpassword",
+    "role": "admin"
+  }
+  """
+* Call PUT "/users/1"
 * Verify response status is 200
-* Verify response body contains "id", "name", "email", "role"
+* Verify response body contains "id": 1
+* Verify response body contains "name": "Updated User"
+* Verify response body contains "email": "updated@example.com"
+* Verify response body contains "role": "admin"
 
-## Scenario: Update User - Bad Request (400)
-* Call PUT "/users/1" with body {"email": "john.updated@example.com"}
+## Scenario: Update user - Bad Request (400) - Invalid input
+* Set request body to:
+  """
+  {
+    "email": "updated@example.com",
+    "password": "newpassword",
+    "role": "admin"
+  }
+  """
+* Call PUT "/users/1"
 * Verify response status is 400
-* Verify response body contains "message": "Invalid input"
+* Verify response body contains "Invalid input"
 
-## Scenario: Update User - Unauthorized (401)
-* Call PUT "/users/1" with body {"name": "John Doe Updated", "email": "john.updated@example.com", "password": "newpassword123", "role": "admin"}
+## Scenario: Update user - Not Found (404)
+* Set request body to:
+  """
+  {
+    "name": "Updated User",
+    "email": "updated@example.com",
+    "password": "newpassword",
+    "role": "admin"
+  }
+  """
+* Call PUT "/users/999"
+* Verify response status is 404
+* Verify response body contains "User not found"
+
+## Scenario: Update user - Unauthorized (401)
 * Set Authorization header "Bearer invalid_token"
+* Set request body to:
+  """
+  {
+    "name": "Updated User",
+    "email": "updated@example.com",
+    "password": "newpassword",
+    "role": "admin"
+  }
+  """
+* Call PUT "/users/1"
 * Verify response status is 401
-* Verify response body contains "message": "Unauthorized"
+* Verify response body contains "Unauthorized"
 
-## Scenario: Update User - Forbidden (403)
-* Call PUT "/users/1" with body {"name": "John Doe Updated", "email": "john.updated@example.com", "password": "newpassword123", "role": "admin"}
+## Scenario: Update user - Forbidden (403)
 * Set Authorization header "Bearer forbidden_token"
+* Set request body to:
+  """
+  {
+    "name": "Updated User",
+    "email": "updated@example.com",
+    "password": "newpassword",
+    "role": "admin"
+  }
+  """
+* Call PUT "/users/1"
 * Verify response status is 403
-* Verify response body contains "message": "Forbidden"
+* Verify response body contains "Forbidden"
 
-# API Test - Delete User
+# API Test - Delete user
 
-## Scenario: Delete User - Success
+## Scenario: Delete user - Success
 * Call DELETE "/users/1"
 * Verify response status is 204
 
-## Scenario: Delete User - Bad Request (400)
+## Scenario: Delete user - Bad Request (400) - Invalid ID
 * Call DELETE "/users/invalid_id"
 * Verify response status is 400
-* Verify response body contains "message": "Invalid ID supplied"
+* Verify response body contains "Invalid ID supplied"
 
-## Scenario: Delete User - Unauthorized (401)
-* Call DELETE "/users/1"
+## Scenario: Delete user - Not Found (404)
+* Call DELETE "/users/999"
+* Verify response status is 404
+* Verify response body contains "User not found"
+
+## Scenario: Delete user - Unauthorized (401)
 * Set Authorization header "Bearer invalid_token"
-* Verify response status is 401
-* Verify response body contains "message": "Unauthorized"
-
-## Scenario: Delete User - Forbidden (403)
 * Call DELETE "/users/1"
+* Verify response status is 401
+* Verify response body contains "Unauthorized"
+
+## Scenario: Delete user - Forbidden (403)
 * Set Authorization header "Bearer forbidden_token"
+* Call DELETE "/users/1"
 * Verify response status is 403
-* Verify response body contains "message": "Forbidden"
+* Verify response body contains "Forbidden"
