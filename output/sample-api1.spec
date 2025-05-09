@@ -1,57 +1,73 @@
-# Sample API Collection
+# API Test - Get User
 
-## Get User
+## Scenario: Get User Details - Success
+* Call GET "https://api.example.com/users/1"
+* Verify response status is 200
+* Verify response body contains "id"
+* Verify response body contains "name"
 
-* Set header "Authorization" with value "Bearer valid_token"
-* Send GET request to "https://api.example.com/users/123"
-* Assert response status is 200
+## Scenario: Get User Details - Bad Request (400)
+* Call GET "https://api.example.com/users/invalid_id"
+* Verify response status is 400
+* Verify response body contains "error"
 
-* Set header "Authorization" with value "Bearer valid_token"
-* Send GET request to "https://api.example.com/users/invalid_id"
-* Assert response status is 400
+## Scenario: Get User Details - Unauthorized (401)
+* Call GET "https://api.example.com/users/1"
+* Set Authorization header "Bearer invalid_token"
+* Verify response status is 401
+* Verify response body contains "error"
 
-* Set header "Authorization" with value ""
-* Send GET request to "https://api.example.com/users/123"
-* Assert response status is 401
+## Scenario: Get User Details - Forbidden (403)
+* Call GET "https://api.example.com/users/1"
+* Set Authorization header "Bearer forbidden_token"
+* Verify response status is 403
+* Verify response body contains "error"
 
-* Set header "Authorization" with value "Bearer restricted_token"
-* Send GET request to "https://api.example.com/users/123"
-* Assert response status is 403
+# API Test - Create User
 
-## Create User
+## Scenario: Create User - Success
+* Call POST "https://api.example.com/users"
+* Set headers "Content-Type: application/json" and "Authorization: Bearer valid_token"
+* Set body '{"name": "John Doe", "email": "john@example.com", "role": "user"}'
+* Verify response status is 200
+* Verify response body contains "id"
 
-* Set header "Content-Type" with value "application/json"
-* Set header "Authorization" with value "Bearer valid_token"
-* Send POST request to "https://api.example.com/users" with body {"name": "John Doe", "email": "john@example.com", "role": "user"}
-* Assert response status is 200
+## Scenario: Create User - Bad Request (400)
+* Call POST "https://api.example.com/users"
+* Set headers "Content-Type: application/json" and "Authorization: Bearer valid_token"
+* Set body '{"name": "", "email": "john@example.com", "role": "user"}'  # Missing name
+* Verify response status is 400
+* Verify response body contains "error"
 
-* Set header "Content-Type" with value "application/json"
-* Set header "Authorization" with value "Bearer valid_token"
-* Send POST request to "https://api.example.com/users" with body {"name": "", "email": "john@example.com", "role": "user"}
-* Assert response status is 400
+## Scenario: Create User - Unauthorized (401)
+* Call POST "https://api.example.com/users"
+* Set headers "Content-Type: application/json"
+* Set body '{"name": "John Doe", "email": "john@example.com", "role": "user"}'
+* Verify response status is 401
+* Verify response body contains "error"
 
-* Set header "Content-Type" with value "application/json"
-* Set header "Authorization" with value ""
-* Send POST request to "https://api.example.com/users" with body {"name": "John Doe", "email": "john@example.com", "role": "user"}
-* Assert response status is 401
+## Scenario: Create User - Forbidden (403)
+* Call POST "https://api.example.com/users"
+* Set headers "Content-Type: application/json" and "Authorization: Bearer forbidden_token"
+* Set body '{"name": "John Doe", "email": "john@example.com", "role": "user"}'
+* Verify response status is 403
+* Verify response body contains "error"
 
-* Set header "Content-Type" with value "application/json"
-* Set header "Authorization" with value "Bearer restricted_token"
-* Send POST request to "https://api.example.com/users" with body {"name": "John Doe", "email": "john@example.com", "role": "user"}
-* Assert response status is 403
+# API Test - List Products
 
-## List Products
+## Scenario: List Products - Success
+* Call GET "https://api.example.com/products"
+* Verify response status is 200
+* Verify response body contains "products"
 
-* Send GET request to "https://api.example.com/products"
-* Assert response status is 200
+## Scenario: List Products - Unauthorized (401)
+* Call GET "https://api.example.com/products"
+* Set Authorization header "Bearer invalid_token"
+* Verify response status is 401
+* Verify response body contains "error"
 
-* Send GET request to "https://api.example.com/products?invalid_param"
-* Assert response status is 400
-
-* Set header "Authorization" with value ""
-* Send GET request to "https://api.example.com/products"
-* Assert response status is 401
-
-* Set header "Authorization" with value "Bearer restricted_token"
-* Send GET request to "https://api.example.com/products"
-* Assert response status is 403
+## Scenario: List Products - Forbidden (403)
+* Call GET "https://api.example.com/products"
+* Set Authorization header "Bearer forbidden_token"
+* Verify response status is 403
+* Verify response body contains "error"

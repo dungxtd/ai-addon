@@ -19,6 +19,6 @@ export function loadConfig(): Config {
     openaiApiKey: process.env.OPENAI_API_KEY,
     googleAiApiKey: process.env.GOOGLE_AI_API_KEY,
     ollamaEndpoint: process.env.OLLAMA_ENDPOINT,
-    preferredProvider: (process.env.PREFERRED_PROVIDER as 'openai' | 'google' | 'ollama') || 'openai'
+    preferredProvider: (process.env.PREFERRED_PROVIDER as 'openai' | 'google' | 'ollama') || 'google'
   };
 }
