@@ -7,7 +7,8 @@
   "description": "AI File Processor using multiple AI providers",
   "scripts": {
     "start": "npx ts-node src/index.ts",
-    "build": "npx ts-node src/index.ts"
+    "build": "npx ts-node src/index.ts",
+    "test": "npx ts-node src/test.ts"
   },
   "devDependencies": {
     "@types/node": "^22.15.12",

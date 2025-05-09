@@ -5,7 +5,7 @@ import { AIConfig } from '../types';
 const DEFAULT_CONFIG: AIConfig = {
     provider: 'google',
     model: 'gemini-2.0-flash',
-    promptTemplate: `Given the following API request details, generate test scenarios in both Gauge and Gherkin formats.
+    promptTemplate: `Given the following API request details, generate test scenarios in both Gauge and Gherkin formats (important).
 
 API Details:
 Name: {{name}}

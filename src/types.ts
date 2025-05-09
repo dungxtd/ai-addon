@@ -1,7 +1,6 @@
 import { Request } from 'postman-collection';
 
 export interface ApiInfo {
-    name: string;
     method: string;
     url: string;
     headers: Record<string, string>;

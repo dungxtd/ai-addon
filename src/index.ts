@@ -4,29 +4,110 @@ import { readJsonFile, writeMarkdownFile, sanitizeFileName } from './utils';
 import { generateTestStepsFromAI } from './generator';
 
 function parseGaugeResponse(response: string): TestStep[] {
-    console.debug('Parsing Gauge response:', response);
+    if (!response || typeof response !== 'string') {
+        console.warn('Invalid Gauge response received:', response);
+        return [];
+    }
+
+    console.debug('Parsing Gauge response');
+
+    // Handle case where response doesn't have proper scenario headers
+    if (!response.match(/##?\s+Scenario:|#\s+Scenario:/)) {
+        console.warn('Gauge response does not contain proper scenario headers, attempting to fix');
+        // Try to identify scenarios by looking for common patterns
+        response = response.replace(/^(Successful request|Bad request|Unauthorized|Forbidden)/gm, '## Scenario: $1');
+    }
+
     const sections = response.split(/\n(?=##?\s+Scenario:|#\s+Scenario:)/).filter(Boolean);
+
+    if (sections.length === 0) {
+        console.warn('No scenarios found in Gauge response');
+        // Create a default scenario if none found
+        return [{
+            scenario: 'Default Scenario',
+            steps: response.split('\n').filter(line => line.trim()).map(line => line.trim())
+        }];
+    }
+
     return sections.map(section => {
         const lines = section.split('\n');
         const scenarioLine = lines[0];
         const scenario = scenarioLine.replace(/^##?\s+Scenario:\s*/, '').trim();
         const steps = lines.slice(1)
             .filter(line => line.trim())
-            .map(line => line.trim());
+            .map(line => {
+                // Ensure steps start with '*' for Gauge format
+                let step = line.trim();
+                if (!step.startsWith('*')) {
+                    step = '* ' + step;
+                }
+                return step;
+            });
         return { scenario, steps };
     });
 }
 
 function parseGherkinResponse(response: string): TestStep[] {
-    console.debug('Parsing Gherkin response:', response);
+    if (!response || typeof response !== 'string') {
+        console.warn('Invalid Gherkin response received:', response);
+        return [];
+    }
+
+    console.debug('Parsing Gherkin response');
+
+    // Handle case where response doesn't have proper scenario headers
+    if (!response.match(/Scenario:/)) {
+        console.warn('Gherkin response does not contain proper scenario headers, attempting to fix');
+        // Try to identify scenarios by looking for common patterns
+        response = response.replace(/^(Successful request|Bad request|Unauthorized|Forbidden)/gm, 'Scenario: $1');
+    }
+
+    // Extract Feature if present
+    let feature = '';
+    const featureMatch = response.match(/Feature:([^\n]+)/);
+    if (featureMatch) {
+        feature = featureMatch[1].trim();
+        // Remove feature line from response to avoid parsing issues
+        response = response.replace(/Feature:[^\n]+\n?/, '');
+    }
+
     const sections = response.split(/\n(?=Scenario:)/).filter(Boolean);
+
+    if (sections.length === 0) {
+        console.warn('No scenarios found in Gherkin response');
+        // Create a default scenario if none found
+        return [{
+            scenario: 'Default Scenario',
+            steps: response.split('\n')
+                .filter(line => line.trim())
+                .map(line => {
+                    // Try to format as Gherkin step if not already
+                    let step = line.trim();
+                    if (!/(Given|When|Then|And|But)/.test(step)) {
+                        step = 'Given ' + step;
+                    }
+                    return step;
+                })
+        }];
+    }
+
     return sections.map(section => {
         const lines = section.split('\n');
         const scenarioLine = lines[0];
         const scenario = scenarioLine.replace(/^Scenario:\s*/, '').trim();
+
         const steps = lines.slice(1)
             .filter(line => line.trim() && !line.toLowerCase().startsWith('feature:'))
-            .map(line => line.trim());
+            .map(line => {
+                // Ensure steps follow Gherkin format
+                let step = line.trim();
+                if (!/(Given|When|Then|And|But)/.test(step)) {
+                    // If step doesn't start with a Gherkin keyword, add 'Given'
+                    step = 'Given ' + step;
+                }
+                return step;
+            });
+
         return { scenario, steps };
     });
 }
@@ -38,7 +119,6 @@ class PostmanCollectionProcessor implements CollectionProcessor {
     processRequest(request: Request): ApiInfo {
         const req = request as any;
         return {
-            name: req.name || '',
             method: (req.method || 'GET').toLowerCase(),
             url: req.url?.toString() || '',
             headers: Object.fromEntries((req.headers?.all() || []).map(h => [h.key, h.value])),
@@ -97,23 +177,23 @@ async function processCollection(collectionPath: string): Promise<void> {
         const gherkinScenarios: { title: string; steps: TestStep[] }[] = [];
 
         for (const api of apis) {
-            const apiTitle = api.path ? `${api.path.join(' > ')} > ${api.name}` : api.name;
+            const apiTitle = api.path ? api.path.join(' > ') : api.url;
             console.log(`Generating tests for: ${apiTitle} (${api.method.toUpperCase()} ${api.url})`);
             let attempts = 0;
             const maxAttempts = 3;
             while (attempts < maxAttempts) {
                 try {
                     const testFormats = await generateTestStepsFromAI(api);
-                    const title = api.path ? 
-                        `${api.path.join(' > ')} > ${api.name}` :
-                        api.name;
+                    const title = api.path ?
+                        api.path.join(' > ') :
+                        api.url;
 
                     const gaugeSteps = parseGaugeResponse(testFormats.gauge);
                     const gherkinSteps = parseGherkinResponse(testFormats.gherkin);
 
                     // Verify that we have valid steps
                     if (gaugeSteps.length === 0 || gherkinSteps.length === 0 ||
-                        gaugeSteps.some(s => s.steps.length === 0) || 
+                        gaugeSteps.some(s => s.steps.length === 0) ||
                         gherkinSteps.some(s => s.steps.length === 0)) {
                         console.log(`Retrying test generation for ${apiTitle} (attempt ${attempts + 1}/${maxAttempts})`);
                         attempts++;
@@ -174,22 +254,22 @@ async function ensureOutputDirectory(dir: string): Promise<void> {
 async function main() {
     try {
         console.log('\n=== Starting Test Generation Process ===');
-        
+
         // Initialize file scanner
         const scanner = new FileScanner();
         await scanner.initialize();
-        
+
         // Scan for files to process
         console.log('\n[1/2] Scanning for Postman collections...');
         const files = await scanner.scanFiles();
-        
+
         if (files.length === 0) {
             console.log('No JSON files found in input folder.');
             return;
         }
-        
+
         console.log(`Found ${files.length} collection(s)`);
-        
+
         // Process each file
         console.log('\n[2/2] Processing collections...');
         for (const file of files) {
@@ -197,13 +277,13 @@ async function main() {
                 console.log(`⏩ Skipped: ${path.basename(file.inputFile)} (both formats exist)`);
                 continue;
             }
-            
+
             await processCollection(file.inputFile);
             console.log(`✅ Processed: ${path.basename(file.inputFile)} → ${path.basename(file.mdFile)} & ${path.basename(file.featureFile)}`);
         }
-        
+
         console.log('\n=== Processing Complete ===');
-        
+
     } catch (error) {
         console.error('Error:', error.message);
         process.exit(1);
