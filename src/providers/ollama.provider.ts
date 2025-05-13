@@ -83,6 +83,19 @@ Each output should contain realistic request steps and assertions based on commo
 * Verify response body contains "id"
 * Verify response body contains "name"
 
+## Scenario: Create User - Success
+* Set request body to
+"""
+{
+  "name": "New User",
+  "email": "newuser@example.com",
+  "role": "editor"
+}
+"""
+* Call POST "${baseUrl}/users"
+* Verify response status is 201
+* Verify response body contains "id"
+
 ## Scenario: Get User Details - Bad Request (400)
 * Call GET "${baseUrl}/users/invalid_id"
 * Verify response status is 400
@@ -110,6 +123,19 @@ Feature: Get User API
     Then the response status should be 200
     And the response body should contain "id"
     And the response body should contain "name"
+
+  Scenario: Create User - Success
+    Given I set the request body to
+    """
+    {
+      "name": "New User",
+      "email": "newuser@example.com",
+      "role": "editor"
+    }
+    """
+    When I send a POST request to "${baseUrl}/users"
+    Then the response status should be 201
+    And the response body should contain "id"
 
   Scenario: Get User Details - Bad Request (400)
     Given I send a GET request to "${baseUrl}/users/invalid_id"
@@ -146,11 +172,37 @@ Feature: Your Gherkin feature content here
 
   private extractGaugeSpec(content: string): string {
     const gaugeMatch = content.match(/```gauge\s*([\s\S]*?)```/);
-    return gaugeMatch ? gaugeMatch[1].trim() : '';
+    if (!gaugeMatch) return '';
+
+    let specContent = gaugeMatch[1].trim();
+
+    // Ensure code blocks use Markdown style (```) instead of triple quotes (""")
+    specContent = specContent.replace(/"""/g, '```');
+
+    // Fix nested code blocks by ensuring proper formatting
+    // This regex finds code blocks and ensures they're properly formatted
+    specContent = specContent.replace(/```(.*?)\n([\s\S]*?)```/g, (_, language, code) => {
+      return '```' + language.trim() + '\n' + code.trim() + '\n```';
+    });
+
+    return specContent;
   }
 
   private extractGherkinFeature(content: string): string {
     const gherkinMatch = content.match(/```gherkin\s*([\s\S]*?)```/);
-    return gherkinMatch ? gherkinMatch[1].trim() : '';
+    if (!gherkinMatch) return '';
+
+    let featureContent = gherkinMatch[1].trim();
+
+    // Ensure code blocks use Markdown style (```) instead of triple quotes (""")
+    featureContent = featureContent.replace(/"""/g, '```');
+
+    // Fix nested code blocks by ensuring proper formatting
+    // This regex finds code blocks and ensures they're properly formatted
+    featureContent = featureContent.replace(/```(.*?)\n([\s\S]*?)```/g, (_, language, code) => {
+      return '```' + language.trim() + '\n' + code.trim() + '\n```';
+    });
+
+    return featureContent;
   }
 }

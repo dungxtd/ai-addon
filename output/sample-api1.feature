@@ -1,144 +1,103 @@
 Feature: Get User API
 
   Scenario: Get User Details - Success
-    Given I send a GET request to "https://api.example.com/users/1" with authorization "Bearer valid_token"
+    Given I send a GET request to "https://api.example.com/users/123" with header "Authorization: Bearer valid_token"
     Then the response status should be 200
     And the response body should contain "id"
     And the response body should contain "name"
     And the response body should contain "email"
 
-  Scenario: Get User Details - Bad Request (400) - Invalid User ID
-    Given I send a GET request to "https://api.example.com/users/invalid_id" with authorization "Bearer valid_token"
+  Scenario: Get User Details - Bad Request (400)
+    Given I send a GET request to "https://api.example.com/users/invalid_id" with header "Authorization: Bearer valid_token"
     Then the response status should be 400
     And the response body should contain "error"
-    And the response body should contain "Invalid User ID format"
 
-  Scenario: Get User Details - Unauthorized (401) - Missing Token
-    Given I send a GET request to "https://api.example.com/users/1"
+  Scenario: Get User Details - Unauthorized (401)
+    Given I send a GET request to "https://api.example.com/users/123"
     Then the response status should be 401
     And the response body should contain "error"
-    And the response body should contain "Unauthorized"
-
-  Scenario: Get User Details - Unauthorized (401) - Invalid Token
-    Given I send a GET request to "https://api.example.com/users/1" with authorization "Bearer invalid_token"
-    Then the response status should be 401
-    And the response body should contain "error"
-    And the response body should contain "Invalid Token"
 
   Scenario: Get User Details - Forbidden (403)
-    Given I send a GET request to "https://api.example.com/users/1" with authorization "Bearer forbidden_token"
+    Given I send a GET request to "https://api.example.com/users/123" with header "Authorization: Bearer insufficient_permissions_token"
     Then the response status should be 403
     And the response body should contain "error"
-    And the response body should contain "Forbidden"
 
 Feature: Create User API
 
   Scenario: Create User - Success
-    Given I send a POST request to "https://api.example.com/users" with body
-      """
-      {
-        "name": "New User",
-        "email": "newuser@example.com",
-        "role": "editor"
-      }
-      """
-    And I set header "Content-Type" to "application/json"
-    And I send the request with authorization "Bearer valid_token"
-    Then the response status should be 200
+    Given I set the request body to
+    ```
+{
+      "name": "New User",
+      "email": "newuser@example.com",
+      "role": "editor"
+    }
+```
+    When I send a POST request to "https://api.example.com/users" with header "Authorization: Bearer valid_token" and header "Content-Type: application/json"
+    Then the response status should be 201
     And the response body should contain "id"
     And the response body should contain "name"
     And the response body should contain "email"
     And the response body should contain "role"
 
-  Scenario: Create User - Bad Request (400) - Missing Email
-    Given I send a POST request to "https://api.example.com/users" with body
-      """
-      {
-        "name": "New User",
-        "role": "editor"
-      }
-      """
-    And I set header "Content-Type" to "application/json"
-    And I send the request with authorization "Bearer valid_token"
-    Then the response status should be 400
-    And the response body should contain "error"
-    And the response body should contain "Email is required"
-
   Scenario: Create User - Bad Request (400) - Invalid Email
-    Given I send a POST request to "https://api.example.com/users" with body
-      """
-      {
-        "name": "New User",
-        "email": "invalid-email",
-        "role": "editor"
-      }
-      """
-    And I set header "Content-Type" to "application/json"
-    And I send the request with authorization "Bearer valid_token"
+    Given I set the request body to
+    ```
+{
+      "name": "New User",
+      "email": "invalid_email",
+      "role": "editor"
+    }
+```
+    When I send a POST request to "https://api.example.com/users" with header "Authorization: Bearer valid_token" and header "Content-Type: application/json"
     Then the response status should be 400
     And the response body should contain "error"
-    And the response body should contain "Invalid email format"
 
-  Scenario: Create User - Unauthorized (401) - Missing Token
-    Given I send a POST request to "https://api.example.com/users" with body
-      """
-      {
-        "name": "New User",
-        "email": "newuser@example.com",
-        "role": "editor"
-      }
-      """
-    And I set header "Content-Type" to "application/json"
+  Scenario: Create User - Unauthorized (401)
+    Given I set the request body to
+    ```
+{
+      "name": "New User",
+      "email": "newuser@example.com",
+      "role": "editor"
+    }
+```
+    When I send a POST request to "https://api.example.com/users" with header "Content-Type: application/json"
     Then the response status should be 401
     And the response body should contain "error"
-    And the response body should contain "Unauthorized"
-
-  Scenario: Create User - Unauthorized (401) - Invalid Token
-    Given I send a POST request to "https://api.example.com/users" with body
-      """
-      {
-        "name": "New User",
-        "email": "newuser@example.com",
-        "role": "editor"
-      }
-      """
-    And I set header "Content-Type" to "application/json"
-    And I send the request with authorization "Bearer invalid_token"
-    Then the response status should be 401
-    And the response body should contain "error"
-    And the response body should contain "Invalid Token"
 
   Scenario: Create User - Forbidden (403)
-    Given I send a POST request to "https://api.example.com/users" with body
-      """
-      {
-        "name": "New User",
-        "email": "newuser@example.com",
-        "role": "editor"
-      }
-      """
-    And I set header "Content-Type" to "application/json"
-    And I send the request with authorization "Bearer forbidden_token"
+    Given I set the request body to
+    ```
+{
+      "name": "New User",
+      "email": "newuser@example.com",
+      "role": "editor"
+    }
+```
+    When I send a POST request to "https://api.example.com/users" with header "Authorization: Bearer insufficient_permissions_token" and header "Content-Type: application/json"
     Then the response status should be 403
     And the response body should contain "error"
-    And the response body should contain "Forbidden"
 
 Feature: List Products API
 
   Scenario: List Products - Success
     Given I send a GET request to "https://api.example.com/products"
     Then the response status should be 200
-    And the response body should contain "products"
     And the response body should be an array
+    And the response body should not be empty
 
-  Scenario: List Products - Unauthorized (401) - Invalid Token
-    Given I send a GET request to "https://api.example.com/products" with authorization "Bearer invalid_token"
+  Scenario: List Products - Unauthorized (401) - If authentication is expected for products list
+    Given I send a GET request to "https://api.example.com/products" with header "Authorization: Bearer invalid_token"
     Then the response status should be 401
     And the response body should contain "error"
-    And the response body should contain "Unauthorized"
 
-  Scenario: List Products - Forbidden (403)
-    Given I send a GET request to "https://api.example.com/products" with authorization "Bearer forbidden_token"
+  Scenario: List Products - Forbidden (403) - If certain role is needed
+    Given I send a GET request to "https://api.example.com/products" with header "Authorization: Bearer insufficient_permissions_token"
     Then the response status should be 403
     And the response body should contain "error"
-    And the response body should contain "Forbidden"
+
+  Scenario: List Products - Bad Request (400) - If Query Parameter is missing or invalid.
+    Given I send a GET request to "https://api.example.com/products?invalid_parameter=123"
+    Then the response status should be 400
+    And the response body should contain "error"
